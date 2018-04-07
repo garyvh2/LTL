@@ -1,4 +1,4 @@
-﻿(function (factory) {
+(function (factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(jQuery, _, moment, ltl) :
         typeof define === 'function' && define.amd ? define(["jQuery", "_", "moment", "ltl"], factory) :
             factory(jQuery, _, moment, ltl);
@@ -6,11 +6,11 @@
     "use strict";
 
 
-    // ====================================== SESSION ====================================== //
-    var Session = function () {
+    // ====================================== CONFIGURATION ====================================== //
+    var Conf = function () {
         return this
     };
-    Session.
+    Conf.
 
-    ltl.Session = Session;
+    ltl.Conf = Conf;
 }));

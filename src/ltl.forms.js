@@ -29,6 +29,7 @@
     }
     // ====================================== Get Data ====================================== //
     Form.prototype.GetData = function () {
+        this.GetInputs();
         // >> Abort if there's not inputs
         if (_.isEmpty(this.inputs) || this.inputs.length == 0) {
             console.warn("[LTL] No Inputs found");
@@ -86,6 +87,7 @@
     }
     // ====================================== Set Data ====================================== //
     Form.prototype.SetData = function (data) {
+        this.GetInputs();
         // >> Abort if there's not inputs
         if (_.isEmpty(this.inputs) || this.inputs.length == 0) {
             console.warn("[LTL] No Inputs found");

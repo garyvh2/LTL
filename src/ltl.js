@@ -63,7 +63,25 @@
         }
     });
 
-    // ====================================== WEB HTTP ====================================== //
+    // ====================================== NAVIGATION ====================================== //
+    // >> Route navigation
+    ltl.go = function (sections, data) {
+        var url = "/";
+        _.each(sections, function (section) {
+            url += section + "/";
+        });
+        url += data || "";
+        window.location.href = url;
+    };
+    ltl.loadJson = function (path, cb) {
+        $
+            .getJSON(path, function (doc) {
+                return cb(null, doc);
+            })
+            .fail(function () {
+                return cb('Unable To Load View Properties');
+            });
+    };
     
     return ltl;
 })));
