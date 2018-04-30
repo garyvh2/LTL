@@ -4,22 +4,42 @@
             factory(jQuery, _, moment, ltl);
 }(function ($, _, moment, ltl) {
     "use strict";
-
+    var methods = ['delete', 'put', 'post'];
 
     // ====================================== FORMS ====================================== //
-    var Form = function (formId) {
+    var Form = function (formId, service, tableObj) {
+        var _this = this;
         // >> Form ID is invalid
         if (_.isEmpty(formId))
             console.error('[LTL] Form Id is not valid');
 
         // Query Form
-        this.form = $('#' + formId.replace(/\#/g, ""));
+        _this.service = service;
+        _this.form = $('#' + formId.replace(/\#/g, ""));
 
         // >> Unable to find the required form
-        if (!this.form[0])
+        if (!_this.form[0])
             console.error('[LTL] Cannot find ' + formId);
 
-        return this;
+        if (_.isEmpty(tableObj)) {
+            console.warn('[LTL] No Table OBJ included');
+        }
+        else {
+            _this.table = tableObj;
+        }
+
+        var validator_path = _this.form.attr('validator');
+        if (!_.isEmpty(validator_path))
+            ltl.loadJson(validator_path, function (err, doc) {
+                if (err) {
+                    console.error(err);
+                    return;
+                };
+
+                _this.form.validate(doc[formId] || {});
+            });
+
+        return _this;
     };
     Form.prototype.GetInputs = function (common) {
         common = _.isEmpty(common) ? '.ltl_input' : common;
@@ -60,6 +80,9 @@
                     value = $this.val();
                     break;
             }
+
+            if (type == 'text' && value == "") return;
+
             data[name] = value;
         });
 
@@ -95,7 +118,7 @@
         }
 
         if (_.isEmpty(data)) {
-            console.warn ("[LTL] Didn't recieve data")
+            console.warn("[LTL] Didn't recieve data")
         }
 
         this.inputs.each(function () {
@@ -104,7 +127,7 @@
             var name = $this.attr("ColumnDataName");
 
             if (_.isEmpty(name)) return;
-            
+
             var value = data[name];;
             switch (type) {
                 case 'select-one':
@@ -122,7 +145,7 @@
                     value = value;
                     break;
             }
-            $this.val(value);
+            $this.val(value).change();
             $this.trigger('keyup.iconpicker');
         });
 
@@ -131,7 +154,7 @@
     var Set_custom = function (input, value) {
         var name = input.attr('SetCustomFunction');
         if (_.isEmpty(name)) return "";
-        
+
         input.data(name)(value);
     }
     var Set_date = function (value) {
@@ -147,6 +170,59 @@
             return el[MultipleSubId] || "";
         });
     }
+
+    // ====================================== Validation ====================================== //
+    Form.prototype.Validate = function () {
+        var _this = this;
+        _this.GetInputs()
+
+        var valid = _this.form.valid();
+        // On Change
+        if (!valid)
+            _this.inputs.on('keyup', function () {
+                if (_this.form.valid()) {
+                    _this.inputs.off('change');
+                }
+            });
+        return valid;
+    }
+
+    // ====================================== Submition ======================================= //
+    _.each(methods, function (method) {
+        Form.prototype[method] = function (custom_service, include_session, omit_refresh) {
+            var _this = this;
+            var service = custom_service || _this.service;
+            var data = _this.GetData();
+
+            if (!_this.Validate()) {
+                console.warn('[LTL] El formulario es invalido')
+                _this.form.trigger('form_error');
+                return;
+            }
+            if (include_session) {
+                data = _.extend(ltl.Session(), data);
+            }
+
+            if (_.isEmpty(_this.service)) {
+                console.error('[LTL] No service specified');
+                return;
+            }
+            ltl.api[method](service, data, true, function (err, res) {
+                if (err || !res) {
+                    ltl.Error(err || res);
+                    _this.form.trigger('smt_error');
+                    return;
+                } else {
+                    ltl.Info(res);
+                    _this.form.trigger('smt_success', [res.Data]);
+                }
+                if (!!_this.table)
+                    _this.table.Reload();
+                if (!omit_refresh)
+                    ltl.Session.Refresh();
+            });
+        }
+    });
 
     ltl.Form = Form;
 }));

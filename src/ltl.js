@@ -30,13 +30,13 @@
                 return;
             }
 
-            var url = window.location.protocol + "//" + this.root + "/" + controller;
+            var url = this.root + controller;
 
-            
+
             // >> Process Data
-            
-            if (typeof data == 'string' || method == 'get') {
-                url += data
+
+            if (typeof data === 'string' || method === 'get') {
+                url += "/" + data
                 data = {};
             }
             // >> JS Promise
@@ -46,17 +46,18 @@
                     resolve(response);
                 }).fail(function (reason) {
                     console.log(reason);
+                    reason = reason.responseJSON && reason.responseJSON.ExceptionMessage || reason.ExceptionMessage || reason.Message || typeof reason == 'string' && reason || "";
                     reject(reason);
                 });
             });
-            if (!processPromise || typeof callback != 'function') return promise;
+            if (!processPromise || typeof callback !== 'function') return promise;
             promise
                 .then(function (response) {
                     return callback(null, response);
                 })
                 .catch(function (reason) {
                     console.log(reason);
-                    reason = reason.responseJSON && reason.responseJSON.ExceptionMessage || reason.message || "";
+                    reason = reason.responseJSON && reason.responseJSON.ExceptionMessage || reason.ExceptionMessage || reason.Message || typeof reason == 'string' && reason || "";
 
                     return callback(reason);
                 });
@@ -73,15 +74,101 @@
         url += data || "";
         window.location.href = url;
     };
+    ltl.go.home = function () {
+        var rol = ltl.Session('Id_Rol');
+
+        switch (rol) {
+            case "PASAJERO":
+                ltl.go(["Lista", "Tarjetas"])
+                break;
+            default:
+                ltl.go(["Home"])
+                break;
+        }
+    }
     ltl.loadJson = function (path, cb) {
         $
-            .getJSON(path, function (doc) {
+            .getJSON(path)
+            .done(function (doc) {
                 return cb(null, doc);
             })
-            .fail(function () {
-                return cb('Unable To Load View Properties');
+            .fail(function (reason) {
+                return cb('Unable To Load JSON File');
             });
     };
-    
+
+    // ====================================== Error Handler ==================================== //
+    ltl.Error = function (reason) {
+        if (typeof data != 'string')
+            reason = reason.responseJSON && reason.responseJSON.ExceptionMessage || reason.ExceptionMessage || reason.Message || typeof reason == 'string' && reason || "";
+
+        if (swal.isVisible() && !swal.isLoading()) {
+            swal.showValidationError(reason);
+        } else {
+            if ($("#alert_container")[0]) {
+                $("#alert_container").removeClass("alert alert-success alert-dismissable");
+                $("#alert_container").addClass("alert alert-danger alert-dismissable");
+                $("#alert_message").text(reason);
+                $('.alert').show();
+            } else {
+
+                swal.close();
+                swal({
+                    type: 'error',
+                    title: 'Ha sucedido un error con la solicitud',
+                    text: reason
+                });
+            }
+        }
+
+
+        console.error(reason);
+    }
+    ltl.Info = function (data) {
+        var reason = data.responseJSON && data.responseJSON.ExceptionMessage || data.ExceptionMessage || data.Message || typeof reason == 'string' && reason || "";
+
+        if (swal.isVisible()) {
+            swal.resetValidationError();
+            swal.close();
+            swal({
+                type: 'success',
+                title: 'Solicitud procesada correctamente',
+                text: reason
+            });
+        } else {
+            if ($("#alert_container")[0]) {
+                $("#alert_container").removeClass("alert alert-danger alert-dismissable");
+                $("#alert_container").addClass("alert alert-success alert-dismissable");
+                $("#alert_message").text(reason);
+                $('.alert').show();
+            } else {
+                swal.resetValidationError();
+                swal.close();
+                swal({
+                    type: 'success',
+                    title: 'Solicitud procesada correctamente',
+                    text: reason
+                });
+            }
+        }
+
+        console.log(reason);
+    }
+
+    ltl.NiceName = function (text) {
+        return text.replace(/_/g, ' ')
+            .replace(/(\w+)/g, function (match) {
+                return match.charAt(0).toUpperCase() + match.slice(1);
+            })
+    }
+
+    $(document).ready(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    });
+
+    $.validator.setDefaults({
+        ignore: []
+    });
+
     return ltl;
 })));
